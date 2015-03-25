@@ -7,7 +7,7 @@ def pow_mod_oneliner(a, x, p):
 def pow_mod_simple(a, x, p):
   pow_bin = lambda y, b: (y if b else 1)
   bit_x = [int(digit) for digit in bin(x)[2:]]
-  return reduce(lambda x, y: mul_mod(x*x, pow_mod_bin(a, y)), bit_x, 1)
+  return reduce(lambda x, y: mul_mod(x*x, pow_bin(a, y), p), bit_x, 1)
 
 pow_mod = pow_mod_simple
 
