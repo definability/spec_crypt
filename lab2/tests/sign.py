@@ -1,6 +1,5 @@
 from unittest import TestCase, main
-
-from src.functions import pow_mod
+from src.sign import *
 
 class TestFunctions(TestCase):
 
@@ -8,7 +7,6 @@ class TestFunctions(TestCase):
     self.p = 0xAF5228967057FE1CB84B92511BE89A47
     self.q = 0x57A9144B382BFF0E5C25C9288DF44D23
     self.a = 0x9E93A4096E5416CED0242228014B67B5
-    pass
 
   def tearDown(self):
     pass

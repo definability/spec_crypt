@@ -1,3 +1,4 @@
 #!/bin/bash
 
-python -m unittest tests.functions
+python -m unittest tests.sign
+python -m unittest tests.cipher

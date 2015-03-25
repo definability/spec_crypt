@@ -19,4 +19,4 @@ def calculate_g(H, U, Z, x, q):
 
 def check_kg(H, S, a, k, p):
   a_k = pow_mod(a, k, p)
-  return mul_mod(a_k, pow_mod(y, H * (mul_mod(S, a_k) % p))) == S % p
+  return mul_mod(a_k, pow_mod(y, H * (mul_mod(S, a_k, p))), p) == S % p
