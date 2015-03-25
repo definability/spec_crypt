@@ -23,9 +23,32 @@ S = [
     0XB0, 0X54, 0XBB, 0X16
 ]
 
+MASK_32BIT = 0xFFFFFFFF
+SIZE_32BIT = 32
+
 def ROL(x, s):
-  s %= 32
-  return ((x << s) | (x >> (32-s))) & 0xFFFFFFFF
+  s %= SIZE_32BIT
+  return ((x << s) | (x >> (SIZE_32BIT-s))) & MASK_32BIT
 
 def F(K, R):
   return ROL(S[K^R], 13)
+
+def reverse_int(n):
+  n_str = bin(n)[2:2+SIZE_32BIT]
+  n_str = list('0' * (SIZE_32BIT - len(n_str)) + n_str)
+  n_str.reverse()
+  return int(''.join(n_str), 2)
+
+def invert_int(n):
+  n_str = bin(n)[2:2+SIZE_32BIT]
+  n_str = list('0' * (SIZE_32BIT - len(n_str)) + n_str)
+  n_str = n_str.replace('0', '*').replace('1', '0').replace('*', '1')
+  return int(n_str, 2)
+
+def cipher(M, K):
+  L, R = reverse_int(M), reverse_int(M >> SIZE_32BIT)
+  keys = map(reverse_int, [K, K >> SIZE_32BIT, invert_int(K),
+                          invert_int(K >> SIZE_32BIT)])
+  for key in keys:
+    L, R = F(key, R) ^ L, L
+  return reverse_int(R) | (reverse_int(L) << 32)
