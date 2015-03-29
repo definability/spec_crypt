@@ -61,9 +61,25 @@ def get_bitstring(x, length):
 
 def G(M, H, is_last=False, M_length = None):
   if M_length is None:
-    M_length = get_64bit_block_size(M) if is_last is True else SIZE_64bit
+    M_length = get_64bit_block_size(M) if is_last is True else SIZE_64BIT
   M_bitstring = get_bitstring(M, M_length)
   new_M = M
   if is_last:
     new_M = int(M_bitstring + get_message_padding_bitstring(len(M_bitstring)), 2)
-  return cipher_M(new_M, H) ^ new_M
+  #print 'M', hex(new_M)
+  return cipher_M(new_M ^ H, H) ^ new_M
+
+BYTES_IN_M = SIZE_64BIT/SIZE_8BIT
+
+def calculate_hash(stream):
+  H = 0
+  while True:
+    chunk = stream.read(BYTES_IN_M)
+    if not chunk:
+      H = G(str_to_64bit_block(''), H, True)
+      break
+    else:
+      H = G(str_to_64bit_block(chunk), H, len(chunk) < BYTES_IN_M)
+      if len(chunk) < BYTES_IN_M:
+        break
+  return H
