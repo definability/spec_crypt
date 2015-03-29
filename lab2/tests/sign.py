@@ -46,27 +46,27 @@ class TestFunctions(TestCase):
 
   def test_calculate_g(self):
     self.assertEqual(calculate_g(0xFFFFFFFFFFFF00752039CB9B9A7B9B,
-                                 0x45102849236955B39391E710CE7DA065,
-                                 0x9925513EB71EA5E6D2EBC1FBB811412,
-                                 0xC86AB2E97B5B6526C85DE79A920ED7B5, q),
-                     0x18182F08EDC259106C26714AD53DF984)
+                                 0x3F9FB3BA44AF48813E00B2615E42603F,
+                                 0x8FAE2EF81BBC94D20C215DE32B80ED2,
+                                 0xF25C7373164977E93AAA16F5CCCBB8, q),
+                     0x4BE680502A98F0E6BBAA105EFF2E3D51)
 
-  def test_calculate_g(self):
+  def test_calculate_k(self):
     self.assertEqual(calculate_k(0xFFFFFFFFFFFF00752039CB9B9A7B9B,
-                                 0x45102849236955B39391E710CE7DA065,
-                                 0x9925513EB71EA5E6D2EBC1FBB811412,
-                                 0xC86AB2E97B5B6526C85DE79A920ED7B5, q),
-                     0x4F5230A13979FE25CFC31A228D0C2FFF)
+                                 0x3F9FB3BA44AF48813E00B2615E42603F,
+                                 0x8FAE2EF81BBC94D20C215DE32B80ED2,
+                                 0xF25C7373164977E93AAA16F5CCCBB8, q),
+                     0x4B6247B5524256A8DE7C6B2AED087011)
 
   def test_calculate_S(self):
-    self.assertEqual(calculate_S(a, 0x18182F08EDC259106C26714AD53DF984, p),
-                     0x65FE1B8D1A0AA67BF2C7F7043643AB2F)
+    self.assertEqual(calculate_S(a, 0x4BE680502A98F0E6BBAA105EFF2E3D51, p),
+                     0xACE021CFC8525A4757830F8D5EA01ECC)
 
   def test_check_kg(self):
     self.assertTrue(check_kg(0x9B7B9A9BCB392075,
-                             0x3F3529B38308161AB7F0C9973DAE3358,
-                             0x4111B9967526351EC1D476D7181670CE,
-                             0x56A9FB5EEC59EEFD42E2F403BA987610))
+                             0x5D1260D9E9AE6B832920A6EA1735D480,
+                             0x4B6247B5524256A8DE7C6B2AED087011,
+                             0xACE021CFC8525A4757830F8D5EA01ECC))
 
   def test_parse_signature(self):
     signature = ['blank',
@@ -84,9 +84,9 @@ class TestFunctions(TestCase):
   def test_check_signature(self):
     signature = ['blank',
         'H = 9B7B9A9BCB392075',
-        'Y = 2EB457BAEF6E652B8E260CE487C044DA',
-        'K = 4F5230A13979FE25CFC31A228D0C2FFF',
-        'S = 65FE1B8D1A0AA67BF2C7F7043643AB2F']
+        'Y = 5D1260D9E9AE6B832920A6EA1735D480',
+        'K = 4B6247B5524256A8DE7C6B2AED087011',
+        'S = ACE021CFC8525A4757830F8D5EA01ECC']
     self.assertTrue(check_signature(signature, 0x9B7B9A9BCB392075))
     self.assertFalse(check_signature(signature, 0x9B7B9A9BCB392076))
 

@@ -43,18 +43,14 @@ def calculate_Z(U, H, a, p):
   return mul_mod(H, pow_mod(a, U, p), p)
 
 def generate_x(Z, q, p):
-  while True:
-    x = randrange(1, p)
-    result = inv_mod(x-Z, q)
-    if result is not None:
-      break
+  x = randrange(1, p)
   return x
 
 def calculate_k(H, U, Z, x, q):
-  return mul_mod(U*Z, inv_mod(x-Z, q), q)
+  return mul_mod((U*H - x*Z), inv_mod(H, q), q)
 
 def calculate_g(H, U, Z, x, q):
-  return mul_mod(x-Z, inv_mod(Z, q), q)
+  return mul_mod(x*Z, inv_mod(H, q), q)
 
 def calculate_S(a, g, p):
   return pow_mod(a, g, p)
@@ -62,7 +58,8 @@ def calculate_S(a, g, p):
 def check_kg(h, y, k, S):
   global a
   global p
-  return pow_mod(mul_mod(a, S, p), mul_mod(calculate_H(h), pow_mod(S, k, p), p), p) == y % p
+  H = calculate_H(h)
+  return pow_mod(S, H, p) == pow_mod(y, mul_mod(pow_mod(a, k, p), S, p), p)
 
 def gen_HYKS(h, a, p, q):
   H = calculate_H(h)
