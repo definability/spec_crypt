@@ -1,4 +1,5 @@
 from functions_32bit import *
+from functions_64bit import *
 
 s_table = [
     0x63, 0x7C, 0x77, 0x7B, 0xF2, 0x6B, 0x6F, 0xC5, 0x30, 0x01, 0x67, 0x2B,
@@ -25,25 +26,44 @@ s_table = [
     0xB0, 0x54, 0xBB, 0x16
 ]
 
-MASK_8BIT = 0xFF
-SIZE_8BIT = 8
-
 def S(x):
   result = 0
-  x = reverse_32bit(x)
   for i in range(SIZE_32BIT/SIZE_8BIT):
     result |= s_table[x & MASK_8BIT] << (i * SIZE_8BIT)
     x >>= SIZE_8BIT
   return result
 
 def F(K, R):
-  return ror(S[K^R], 13)
+  return rol(S(K^R), 13)
 
-def cipher(M, K):
-  get_L = lambda x: reverse_32bit(x & MASK_32BIT)
-  get_R = lambda x: reverse_32bit((x >> SIZE_32BIT) & MASK_32BIT)
+def cipher_M(M, K):
+  get_L = lambda x: reverse_bytes_32bit((x >> SIZE_32BIT) & MASK_32BIT)
+  get_R = lambda x: reverse_bytes_32bit(x & MASK_32BIT)
   L, R = get_L(M), get_R(M)
   keys = [get_L(K), get_R(K), invert_32bit(get_R(K)), invert_32bit(get_L(K))]
+  i = 0
   for key in keys:
-    L, R = F(key, R) ^ L, L
-  return reverse_32bit(R) | (reverse_32bit(L) << 32)
+    R, L = L, L ^ F(key, R)
+    i += 1
+  return reverse_bytes_32bit(L) | (reverse_bytes_32bit(R) << SIZE_32BIT)
+
+def get_padding_zeros_count(message_length):
+  return (64 - (message_length+1)%64) % 64
+
+def get_message_padding_bitstring(message_length):
+  padding_bin = '1' + '0'*(get_padding_zeros_count(message_length))
+  return padding_bin
+
+def get_bitstring(x, length):
+  bitstring = bin(x)[2:2+length]
+  bitstring = '0'*(length-len(bitstring)) + bitstring
+  return bitstring
+
+def G(M, H, is_last=False, M_length = None):
+  if M_length is None:
+    M_length = get_64bit_block_size(M) if is_last is True else SIZE_64bit
+  M_bitstring = get_bitstring(M, M_length)
+  new_M = M
+  if is_last:
+    new_M = int(M_bitstring + get_message_padding_bitstring(len(M_bitstring)), 2)
+  return cipher_M(new_M, H) ^ new_M
