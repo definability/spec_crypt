@@ -38,11 +38,7 @@ def S(x):
 def F(K, R):
   return rol(S(K^R), 13)
 
-global iteration
-iteration = 1
-
 def cipher_M(M, K):
-  global iteration
   get_L = lambda x: reverse_bytes_32bit((x >> SIZE_32BIT) & MASK_32BIT)
   get_R = lambda x: reverse_bytes_32bit(x & MASK_32BIT)
   L, R = get_L(M), get_R(M)
@@ -77,7 +73,6 @@ def G(M, H, is_last=False, M_length = None):
 BYTES_IN_M = SIZE_64BIT/SIZE_8BIT
 
 def calculate_hash(stream):
-  global iteration
   H = 0
   while True:
     chunk = stream.read(BYTES_IN_M)
@@ -89,5 +84,4 @@ def calculate_hash(stream):
       H = G(M, H, len(chunk) < BYTES_IN_M, len(chunk)*SIZE_8BIT)
       if len(chunk) < BYTES_IN_M:
         break
-    iteration += 1
   return H
