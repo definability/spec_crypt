@@ -1,4 +1,4 @@
-from functions_32bit import SIZE_8BIT
+from functions_32bit import *
 
 SIZE_64BIT = 64
 MASK_64BIT = 0xFFFFFFFFFFFFFFFF
@@ -15,3 +15,7 @@ def str_to_64bit_block(chunk):
     result <<= SIZE_8BIT
     result |= ord(c)
   return result
+
+def reverse_bytes_64bit(block):
+  return ((reverse_bytes_32bit(block & MASK_32BIT) << SIZE_32BIT) |
+           reverse_bytes_32bit((block >> SIZE_32BIT) & MASK_32BIT))
