@@ -1,3 +1,5 @@
+from exceptions import ValueError
+
 from functions_32bit import *
 from functions_64bit import *
 
@@ -36,15 +38,17 @@ def S(x):
 def F(K, R):
   return rol(S(K^R), 13)
 
+global iteration
+iteration = 1
+
 def cipher_M(M, K):
+  global iteration
   get_L = lambda x: reverse_bytes_32bit((x >> SIZE_32BIT) & MASK_32BIT)
   get_R = lambda x: reverse_bytes_32bit(x & MASK_32BIT)
   L, R = get_L(M), get_R(M)
   keys = [get_L(K), get_R(K), invert_32bit(get_R(K)), invert_32bit(get_L(K))]
-  i = 0
   for key in keys:
     R, L = L, L ^ F(key, R)
-    i += 1
   return reverse_bytes_32bit(L) | (reverse_bytes_32bit(R) << SIZE_32BIT)
 
 def get_padding_zeros_count(message_length):
@@ -60,26 +64,30 @@ def get_bitstring(x, length):
   return bitstring
 
 def G(M, H, is_last=False, M_length = None):
-  if M_length is None:
-    M_length = get_64bit_block_size(M) if is_last is True else SIZE_64BIT
+  if M_length is None and is_last:
+    raise ValueError("Length can not be None if is_last is true")
+  elif M_length is None:
+    M_length = SIZE_64BIT
   M_bitstring = get_bitstring(M, M_length)
   new_M = M
   if is_last:
     new_M = int(M_bitstring + get_message_padding_bitstring(len(M_bitstring)), 2)
-  #print 'M', hex(new_M)
   return cipher_M(new_M ^ H, H) ^ new_M
 
 BYTES_IN_M = SIZE_64BIT/SIZE_8BIT
 
 def calculate_hash(stream):
+  global iteration
   H = 0
   while True:
     chunk = stream.read(BYTES_IN_M)
     if not chunk:
-      H = G(str_to_64bit_block(''), H, True)
+      H = G(str_to_64bit_block(''), H, True, 0)
       break
     else:
-      H = G(str_to_64bit_block(chunk), H, len(chunk) < BYTES_IN_M)
+      M = str_to_64bit_block(chunk)
+      H = G(M, H, len(chunk) < BYTES_IN_M, len(chunk)*SIZE_8BIT)
       if len(chunk) < BYTES_IN_M:
         break
+    iteration += 1
   return H

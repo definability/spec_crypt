@@ -10,6 +10,12 @@ class TestFunctions(TestCase):
   def tearDown(self):
     pass
 
+  def test_constants(self):
+    self.assertEqual(SIZE_8BIT, 8)
+    self.assertEqual(MASK_8BIT, 0xFF)
+    self.assertEqual(SIZE_32BIT, 32)
+    self.assertEqual(MASK_32BIT, 0xFFFFFFFF)
+
   def test_reverse_bytes_32bit(self):
     self.assertEqual(reverse_bytes_32bit(0), 0)
     self.assertEqual(reverse_bytes_32bit(1), 0x01000000)

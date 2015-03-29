@@ -10,6 +10,10 @@ class TestFunctions(TestCase):
   def tearDown(self):
     pass
 
+  def test_constants(self):
+    self.assertEqual(SIZE_64BIT, 64)
+    self.assertEqual(MASK_64BIT, 0xFFFFFFFFFFFFFFFF)
+
   def test_get_64bit_block_size(self):
     self.assertEqual(get_64bit_block_size(0), 0)
     self.assertEqual(get_64bit_block_size(1), 8)
