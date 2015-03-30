@@ -40,7 +40,7 @@ def calculate_H(h):
   return (reverse_bytes_64bit(h) | (0x00FFFFFFFFFFFF00 << SIZE_64BIT))
 
 def calculate_Z(U, H, a, p):
-  return mul_mod(H, pow_mod(a, U, p), p)
+  return pow_mod(a, U, p)
 
 def generate_x(Z, q, p):
   x = randrange(1, p)

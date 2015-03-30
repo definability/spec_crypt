@@ -40,9 +40,9 @@ class TestFunctions(TestCase):
                      0xFFFFFFFFFFFF00752039CB9B9A7B9B)
 
   def test_calculate_Z(self):
-    self.assertEqual(calculate_Z(0x45102849236955B39391E710CE7DA065,
+    self.assertEqual(calculate_Z(0x51F19E4493888D5296F6AD7A45F39509,
                                  0xFFFFFFFFFFFF00752039CB9B9A7B9B, a, p),
-                     0x9925513EB71EA5E6D2EBC1FBB811412)
+                     0x9AAC2FC5E32C300E0B9DAAA5A3F00BE)
 
   def test_calculate_g(self):
     self.assertEqual(calculate_g(0xFFFFFFFFFFFF00752039CB9B9A7B9B,
@@ -50,6 +50,11 @@ class TestFunctions(TestCase):
                                  0x8FAE2EF81BBC94D20C215DE32B80ED2,
                                  0xF25C7373164977E93AAA16F5CCCBB8, q),
                      0x4BE680502A98F0E6BBAA105EFF2E3D51)
+    self.assertEqual(calculate_g(0xFFFFFFFFFFFF00752039CB9B9A7B9B,
+                                 0x51F19E4493888D5296F6AD7A45F39509,
+                                 0x9AAC2FC5E32C300E0B9DAAA5A3F00BE,
+                                 0x53B3AC4531DFBE6327A3D02A763EE40C, q),
+                     0x40CE09497DE489092C08D535B8189EEB)
 
   def test_calculate_k(self):
     self.assertEqual(calculate_k(0xFFFFFFFFFFFF00752039CB9B9A7B9B,
@@ -57,10 +62,17 @@ class TestFunctions(TestCase):
                                  0x8FAE2EF81BBC94D20C215DE32B80ED2,
                                  0xF25C7373164977E93AAA16F5CCCBB8, q),
                      0x4B6247B5524256A8DE7C6B2AED087011)
+    self.assertEqual(calculate_k(0xFFFFFFFFFFFF00752039CB9B9A7B9B,
+                                 0x51F19E4493888D5296F6AD7A45F39509,
+                                 0x9AAC2FC5E32C300E0B9DAAA5A3F00BE,
+                                 0x53B3AC4531DFBE6327A3D02A763EE40C, q),
+                     0x112394FB15A404496AEDD8448DDAF61E)
 
   def test_calculate_S(self):
     self.assertEqual(calculate_S(a, 0x4BE680502A98F0E6BBAA105EFF2E3D51, p),
                      0xACE021CFC8525A4757830F8D5EA01ECC)
+    self.assertEqual(calculate_S(a, 0x40CE09497DE489092C08D535B8189EEB, p),
+                     0x162C6D8B0F859176220C993B5A947F7E)
 
   def test_check_kg(self):
     self.assertTrue(check_kg(0x9B7B9A9BCB392075,
