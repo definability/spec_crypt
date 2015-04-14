@@ -18,7 +18,7 @@
 #endif
 #include "emmintrin.h"
 
-
+/*
 int genKAT(unsigned long long plaintext_length, unsigned long long ad_length)
 {
 	if ((plaintext_length > (1 << 31)) || (ad_length> (1 << 31)))
@@ -189,7 +189,6 @@ int genKAT(unsigned long long plaintext_length, unsigned long long ad_length)
 
 }
 
-
 int benchmark(unsigned long long plaintext_length, unsigned long long ad_length)
 {
 	if ((plaintext_length >(1 << 31)) || (ad_length> (1 << 31)))
@@ -294,12 +293,13 @@ int benchmark(unsigned long long plaintext_length, unsigned long long ad_length)
 	free(associated_data);
 	return 0;
 }
-
+*/
 
 
 int main(int argc, char* argv[])
 {
 	remove("kat.log");
+    /*
 	for (unsigned p_length = 0; p_length < 400; p_length+=20)
 	{
 		printf("plaintext length %u\n", p_length);
@@ -307,6 +307,21 @@ int main(int argc, char* argv[])
 			genKAT(p_length, ad_length);
         }
 	}
+    */
+    char plaintext[] = "Hello world!";
+    unsigned long long plaintext_length = strlen(plaintext);
+    unsigned long long ciphertext_length = strlen(plaintext);
+    unsigned long long decrypted_length = strlen(plaintext);
+    char* plaintext_decrypted = (char*)malloc(decrypted_length);
+    char* ciphertext = (char*)malloc(ciphertext_length);
+    char associated_data[] = "ad";
+    unsigned long long ad_length = strlen(associated_data);
+    char nonce[] = "nonce";
+    char key[] = "key";
+	crypto_aead_encrypt(ciphertext, &ciphertext_length, plaintext, plaintext_length, associated_data, ad_length, NULL, nonce, key);
+    printf("%s -> %s\n", plaintext, ciphertext);
+	int result = crypto_aead_decrypt(plaintext_decrypted, &decrypted_length, NULL, ciphertext, ciphertext_length, associated_data, ad_length, nonce, key);
+    printf("%d: %s\n", result, plaintext_decrypted);
 	/*for (unsigned i = 0; i < 10; ++i)
 	benchmark_ctr(1000000);*/
 	//benchmark(10000000, 0);

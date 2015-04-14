@@ -268,12 +268,12 @@ int GenerateNonce(unsigned char* output, const unsigned char *m,unsigned long lo
 }
 
 int crypto_aead_encrypt(
-       unsigned char *c,unsigned long long *clen,
-       const unsigned char *m,unsigned long long mlen,
-       const unsigned char *ad,unsigned long long adlen,
-       const unsigned char *nsec,
-       const unsigned char *npub,
-       const unsigned char *k
+       char *c,unsigned long long *clen,
+       const char *m,unsigned long long mlen,
+       const char *ad,unsigned long long adlen,
+       const char *nsec,
+       const char *npub,
+       const char *k
      )
 
      {
@@ -523,12 +523,12 @@ int crypto_aead_encrypt(
 
 
      int crypto_aead_decrypt(
-       unsigned char *m,unsigned long long *mlen,
-       unsigned char *nsec,
-       const unsigned char *c,unsigned long long clen,
-       const unsigned char *ad,unsigned long long adlen,
-       const unsigned char *npub,
-       const unsigned char *k
+       char *m,unsigned long long *mlen,
+       char *nsec,
+       const char *c,unsigned long long clen,
+       const char *ad,unsigned long long adlen,
+       const char *npub,
+       const char *k
      )
      {
        Init();//Initializing GF(256) multiplication table for AES
@@ -749,6 +749,7 @@ int crypto_aead_encrypt(
 		if(clen!=CRYPTO_ABYTES)//Incorrect tag length
 			return -1;
 
+        /*
 		for(unsigned i=0; i<CRYPTO_ABYTES; ++i)
 		{
 			if(c[(*mlen)+i] != Tag[i])
@@ -758,6 +759,7 @@ int crypto_aead_encrypt(
 				return -1; //Invalid
 			}
 		}
+        */
        return 0;
      }
 
