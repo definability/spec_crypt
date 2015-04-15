@@ -7,3 +7,7 @@ Original:
 
 Description:
 [http://competitions.cr.yp.to/round1/paeqv1.pdf](http://competitions.cr.yp.to/round1/paeqv1.pdf)
+
+## Excuses
+
+Sorry for this code...I needed to do it as fast as I can :(
