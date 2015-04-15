@@ -1,8 +1,5 @@
 /* PAEQ-64: reference  version*/
 
-#ifndef NO_SUPERCOP
-//#include "crypto_aead.h"
-#endif
 #include "api.h"
 
 #include <stdio.h>
