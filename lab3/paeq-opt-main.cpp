@@ -86,6 +86,11 @@ int enc(char* filename, char* k) {
     }
     fclose(enc_output);
     fclose(mac_output);
+    free(enc_filename);
+    free(mac_filename);
+    free(plaintext_decrypted);
+    free(ciphertext);
+    free(plaintext);
     return 0;
 }
 
@@ -132,9 +137,14 @@ int dec(char* filename, char* key) {
     char * k = (char*) malloc(strlen(key));
     strcpy(k, key);
 	int result = crypto_aead_decrypt(plaintext_decrypted, &decrypted_length, NULL, ciphertext, ciphertext_length, associated_data, ad_length, nonce, k);
+    free(enc_filename);
+    free(mac_filename);
+    free(ciphertext);
     if (result) {
+        free(plaintext_decrypted);
         return result;
     }
     printf("Your text: `%s'\n", plaintext_decrypted);
+    free(plaintext_decrypted);
     return 0;
 }
