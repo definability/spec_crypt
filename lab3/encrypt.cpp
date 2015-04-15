@@ -506,8 +506,9 @@ int crypto_aead_encrypt(
 		}
 
 		//3. Truncation
-		for(unsigned i=0; i<CRYPTO_ABYTES; ++i)
+		for(unsigned i=0; i<CRYPTO_ABYTES; ++i) {
 			c[(*clen)+i] = Tag[i];
+        }
 		*clen += CRYPTO_ABYTES;
 
 
@@ -522,248 +523,241 @@ int crypto_aead_encrypt(
 
 
 
-     int crypto_aead_decrypt(
-       char *m,unsigned long long *mlen,
-       char *nsec,
-       const char *c,unsigned long long clen,
-       const char *ad,unsigned long long adlen,
-       const char *npub,
-       const char *k
-     )
-     {
-       Init();//Initializing GF(256) multiplication table for AES
+int crypto_aead_decrypt(
+        char *m,unsigned long long *mlen,
+        char *nsec,
+        const char *c,unsigned long long clen,
+        const char *ad,unsigned long long adlen,
+        const char *npub,
+        const char *k
+        )
+{
+    Init();//Initializing GF(256) multiplication table for AES
 
-		 if(mlen==NULL)
-			 return -1;
-		 if((clen==0) && (adlen==0))
-		 {
-			 *mlen=0;
-			 return 0;
-		 }
+    if(mlen==NULL)
+        return -1;
+	if((clen==0) && (adlen==0)) {
+		 *mlen=0;
+		 return 0;
+	}
 
-		 //Here we do decryption and/or authentication so we need a key and a plaintext pointer valid
-		 if( (k==NULL) || (m==NULL) )
-			 return -2;
+     //Here we do decryption and/or authentication so we need a key and a plaintext pointer valid
+    if( (k==NULL) || (m==NULL) )
+        return -2;
 
-		 //Minimum tag length verification
-		 if (clen < CRYPTO_ABYTES)
-			 return -1;
+    //Minimum tag length verification
+    if (clen < CRYPTO_ABYTES)
+        return -1;
 
-		 //Initializing constants
-		unsigned char D0[2];
-		D0[0] = CRYPTO_NPUBBYTES*8; //nonce length in bits
-		D0[1] = CRYPTO_KEYBYTES*8; //key length in bits
-		(*mlen)=0;
+	 //Initializing constants
+	unsigned char D0[2];
+	D0[0] = CRYPTO_NPUBBYTES*8; //nonce length in bits
+	D0[1] = CRYPTO_KEYBYTES*8; //key length in bits
+	(*mlen)=0;
+	 
+	 //Initializing the last input to F
+	 unsigned char BlockLastInput[64];  //Z1 - input to the last call of F
+	 memset(BlockLastInput,0,64);
+	 unsigned char Tag[64]; //Tag output
+	 for(unsigned i=0; i<CRYPTO_KEYBYTES; ++i) //Key to the Z input
+		BlockLastInput[64-CRYPTO_KEYBYTES+i] = k[i];
+	 BlockLastInput[0] = D0[0]+6;
+	 BlockLastInput[1] = D0[1];
+
+	 unsigned long long decrypted_bytes=0;//Encrypted bytes counter
+	 
+
+	 //Encryption part
+	 if(clen!=CRYPTO_ABYTES) //Ciphertext is more than just a tag
+	 {
+		 if(c==NULL)
+			 return -3;
+		 unsigned char BlockInput[64];  //V1 - input to the first layer call of F
+		 unsigned char BlockMiddle[64];  //W1 - output of the first layer call of F
+		 unsigned char BlockOutput[64];  //Y1 - output of the second layer call of F
+		 unsigned long long mblock_counter=1;   //Message block counter
 		 
-		 //Initializing the last input to F
-		 unsigned char BlockLastInput[64];  //Z1 - input to the last call of F
-		 memset(BlockLastInput,0,64);
-		 unsigned char Tag[64]; //Tag output
-		 for(unsigned i=0; i<CRYPTO_KEYBYTES; ++i) //Key to the Z input
-			BlockLastInput[64-CRYPTO_KEYBYTES+i] = k[i];
-		 BlockLastInput[0] = D0[0]+6;
-		 BlockLastInput[1] = D0[1];
-
-		 unsigned long long decrypted_bytes=0;//Encrypted bytes counter
-		 
-
-		 //Encryption part
-		 if(clen!=CRYPTO_ABYTES) //Ciphertext is more than just a tag
+		 while((clen>CRYPTO_ABYTES))
 		 {
-			 if(c==NULL)
-				 return -3;
-			 unsigned char BlockInput[64];  //V1 - input to the first layer call of F
-			 unsigned char BlockMiddle[64];  //W1 - output of the first layer call of F
-			 unsigned char BlockOutput[64];  //Y1 - output of the second layer call of F
-			 unsigned long long mblock_counter=1;   //Message block counter
-			 
-			 while((clen>CRYPTO_ABYTES))
+			 /* I. First layer */
+
+			 //1. Domain-separation constant
+			 BlockInput[1] = D0[1]; 
+			 if(clen>= (CRYPTO_MBLOCK+CRYPTO_ABYTES))
+				 BlockInput[0] = D0[0];
+			 else //Last incomplete block
+				 BlockInput[0] = D0[0]+1;
+
+			 //2. Counter
+			 for(unsigned i=0; i<CRYPTO_COUNTERBYTES; ++i)
 			 {
-				 /* I. First layer */
-
-				 //1. Domain-separation constant
-				 BlockInput[1] = D0[1]; 
-				 if(clen>= (CRYPTO_MBLOCK+CRYPTO_ABYTES))
-					 BlockInput[0] = D0[0];
-				 else //Last incomplete block
-					 BlockInput[0] = D0[0]+1;
-
-				 //2. Counter
-				 for(unsigned i=0; i<CRYPTO_COUNTERBYTES; ++i)
-				 {
-					 BlockInput[i+2] = (i<sizeof(mblock_counter))?(mblock_counter>>(8*i))&0xff :0;//copying counter bytewise
-				 }
-				 
-				 //3. Nonce
-				 for(unsigned i=0; i<CRYPTO_NPUBBYTES; ++i) 
-				 {
-					 BlockInput[i+2+CRYPTO_COUNTERBYTES] = npub[i];
-				 }
-
-				 //4. Key
-				 for(unsigned i=0; i<CRYPTO_KEYBYTES; ++i) 
-				 {
-					 BlockInput[i+2+CRYPTO_COUNTERBYTES+CRYPTO_NPUBBYTES] = k[i];
-				 }	 
-
-				 //5. Permutation call
-				 FPerm(BlockInput, BlockMiddle); //First layer call to F
-
-				 /* II. Encryption*/
-
-				 if(clen>=CRYPTO_MBLOCK+CRYPTO_ABYTES)//Full block encryption
-				 {
-					 for(unsigned i=0; i<CRYPTO_MBLOCK; ++i)
-					 {
-						 m[decrypted_bytes] = BlockMiddle[i+2]^c[decrypted_bytes];
-						 BlockMiddle[i+2] = c[decrypted_bytes];
-						 decrypted_bytes++;
-						 
-					 }
-					 BlockMiddle[1] =  D0[1];
-					 BlockMiddle[0] = D0[0]+2;  //New Di constant
-
-				 }
-
-				 else //Last incomplete block
-				 {
-					 for(unsigned i=0; i<(unsigned)clen-CRYPTO_ABYTES; ++i)//Incomplete block Encryption
-					 {
-						  m[decrypted_bytes] = BlockMiddle[i+2]^c[decrypted_bytes];
-						 BlockMiddle[i+2] = c[decrypted_bytes];
-						 decrypted_bytes++;
-					 }
-					 for(unsigned i=(unsigned)clen-CRYPTO_ABYTES; i<CRYPTO_MBLOCK; ++i)
-					 {
-						 BlockMiddle[i+2] ^=  (unsigned char)(clen-CRYPTO_ABYTES);  //Extra Padding: extra bytes filled with the last block length in bytes
-					 }
-
-					 BlockMiddle[1] =  D0[1];
-					 BlockMiddle[0] = D0[0]+3;  //New Di constant
-				 }
-
-				 //III. Second permutation call
-				 //1. Call
-				 FPerm(BlockMiddle, BlockOutput); //Second layer call to F
-				 
-				 //2. Buffer update
-				 for(unsigned i=0; i<64-2-CRYPTO_KEYBYTES; ++i)//Adding the output to tag preparation buffer
-				 {
-					 BlockLastInput[i+2] ^= BlockOutput[i+2];
-				 }
-
-
-				 //Counters increment
-				 mblock_counter++;
-				 if(clen>=CRYPTO_MBLOCK+CRYPTO_ABYTES)
-					 clen-=CRYPTO_MBLOCK;
-				 
-				 else 
-				 	 clen=CRYPTO_ABYTES;
-				 (*mlen) = decrypted_bytes;
+				 BlockInput[i+2] = (i<sizeof(mblock_counter))?(mblock_counter>>(8*i))&0xff :0;//copying counter bytewise
 			 }
+			 
+			 //3. Nonce
+			 for(unsigned i=0; i<CRYPTO_NPUBBYTES; ++i) 
+			 {
+				 BlockInput[i+2+CRYPTO_COUNTERBYTES] = npub[i];
+			 }
+
+			 //4. Key
+			 for(unsigned i=0; i<CRYPTO_KEYBYTES; ++i) 
+			 {
+				 BlockInput[i+2+CRYPTO_COUNTERBYTES+CRYPTO_NPUBBYTES] = k[i];
+			 }	 
+
+			 //5. Permutation call
+			 FPerm(BlockInput, BlockMiddle); //First layer call to F
+
+			 /* II. Encryption*/
+
+			 if(clen>=CRYPTO_MBLOCK+CRYPTO_ABYTES)//Full block encryption
+			 {
+				 for(unsigned i=0; i<CRYPTO_MBLOCK; ++i)
+				 {
+					 m[decrypted_bytes] = BlockMiddle[i+2]^c[decrypted_bytes];
+					 BlockMiddle[i+2] = c[decrypted_bytes];
+					 decrypted_bytes++;
+					 
+				 }
+				 BlockMiddle[1] =  D0[1];
+				 BlockMiddle[0] = D0[0]+2;  //New Di constant
+
+			 }
+
+			 else //Last incomplete block
+			 {
+				 for(unsigned i=0; i<(unsigned)clen-CRYPTO_ABYTES; ++i)//Incomplete block Encryption
+				 {
+					  m[decrypted_bytes] = BlockMiddle[i+2]^c[decrypted_bytes];
+					 BlockMiddle[i+2] = c[decrypted_bytes];
+					 decrypted_bytes++;
+				 }
+				 for(unsigned i=(unsigned)clen-CRYPTO_ABYTES; i<CRYPTO_MBLOCK; ++i)
+				 {
+					 BlockMiddle[i+2] ^=  (unsigned char)(clen-CRYPTO_ABYTES);  //Extra Padding: extra bytes filled with the last block length in bytes
+				 }
+
+				 BlockMiddle[1] =  D0[1];
+				 BlockMiddle[0] = D0[0]+3;  //New Di constant
+			 }
+
+			 //III. Second permutation call
+			 //1. Call
+			 FPerm(BlockMiddle, BlockOutput); //Second layer call to F
+			 
+			 //2. Buffer update
+			 for(unsigned i=0; i<64-2-CRYPTO_KEYBYTES; ++i)//Adding the output to tag preparation buffer
+			 {
+				 BlockLastInput[i+2] ^= BlockOutput[i+2];
+			 }
+
+
+			 //Counters increment
+			 mblock_counter++;
+			 if(clen>=CRYPTO_MBLOCK+CRYPTO_ABYTES)
+				 clen-=CRYPTO_MBLOCK;
+			 
+			 else 
+			 	 clen=CRYPTO_ABYTES;
+			 (*mlen) = decrypted_bytes;
 		 }
+	 }
 
-		//Associated data part	  
-		if(adlen!=0)
+	//Associated data part	  
+	if(adlen!=0)
+	{
+		if(ad==NULL)
+			return -4;
+
+		unsigned char BlockInput[64];  //V1 - input to the first layer call of F
+		 unsigned char BlockOutput[64];  //Y1 - output of the second layer call of F
+		 unsigned long long adblock_counter=1;   //AD block counter
+		 unsigned long long auth_bytes=0;
+
+		while(adlen>0)
 		{
-			if(ad==NULL)
-				return -4;
+			//1. Constant
+			BlockInput[1] = D0[1];
+			if(adlen>= CRYPTO_ADBLOCK)
+				 BlockInput[0] = D0[0]+4;
+			 else //Last incomplete block
+				 BlockInput[0] = D0[0]+5;
 
-			unsigned char BlockInput[64];  //V1 - input to the first layer call of F
-			 unsigned char BlockOutput[64];  //Y1 - output of the second layer call of F
-			 unsigned long long adblock_counter=1;   //AD block counter
-			 unsigned long long auth_bytes=0;
 
-			while(adlen>0)
+			//2. Counter
+			for(unsigned i=0; i<CRYPTO_KEYBYTES; ++i)
+				BlockInput[i+2] = (i<sizeof(adblock_counter))? (adblock_counter>>(8*i))&0xff:0;//copying counter bytewise
+
+			//3. AD block
+			if(adlen >= CRYPTO_ADBLOCK) //Filling AD block
 			{
-				//1. Constant
-				BlockInput[1] = D0[1];
-				if(adlen>= CRYPTO_ADBLOCK)
-					 BlockInput[0] = D0[0]+4;
-				 else //Last incomplete block
-					 BlockInput[0] = D0[0]+5;
-
-
-				//2. Counter
-				for(unsigned i=0; i<CRYPTO_KEYBYTES; ++i)
-					BlockInput[i+2] = (i<sizeof(adblock_counter))? (adblock_counter>>(8*i))&0xff:0;//copying counter bytewise
-
-				//3. AD block
-				if(adlen >= CRYPTO_ADBLOCK) //Filling AD block
-				{
-					for(unsigned i=0; i<CRYPTO_ADBLOCK; ++i)
-						BlockInput[i+2+CRYPTO_KEYBYTES] = ad[auth_bytes+i];
-					
-				}
-				else //Last incomplete block
-				{
-					for(unsigned i=0; i<adlen; ++i)
-						BlockInput[i+2+CRYPTO_KEYBYTES] = ad[auth_bytes+i];
-					for(unsigned i=(unsigned)adlen; i<CRYPTO_ADBLOCK; ++i)
-						BlockInput[i+2+CRYPTO_KEYBYTES] = (unsigned char)adlen;
-				}
-
-				//4. Key
-				for(unsigned i=0; i<CRYPTO_KEYBYTES; ++i) 
-				{
-					 BlockInput[i+CRYPTO_ADBLOCK+CRYPTO_KEYBYTES+2] = k[i];
-				}
+				for(unsigned i=0; i<CRYPTO_ADBLOCK; ++i)
+					BlockInput[i+2+CRYPTO_KEYBYTES] = ad[auth_bytes+i];
 				
-
-				//5.Call to the F permutation
-
-				FPerm(BlockInput,BlockOutput);//Call to the F permutation
-
-				 for(unsigned i=0; i<64-2-CRYPTO_KEYBYTES; ++i)//Adding the output to Z
-				 {
-					 BlockLastInput[i+2] ^= BlockOutput[i+2];
-				 }
-
-				//Counters increment
-				 adblock_counter++;
-				 if(adlen>=CRYPTO_ADBLOCK)
-				 {
-					 auth_bytes += CRYPTO_ADBLOCK;
-					 adlen-=CRYPTO_ADBLOCK;
-				 }
-				 else 
-				 {
-					 auth_bytes += adlen;
-					 adlen=0;
-				 }
 			}
-		}
-
-		// Tag production 
-
-		//1. Permutation call
-		FPerm(BlockLastInput,Tag);
-		//2. Key injection
-		for(unsigned i=0; i<CRYPTO_KEYBYTES; ++i) 
-		{
-				Tag[64-CRYPTO_KEYBYTES+i] ^= k[i];
-		}
-
-		//3. Truncation
-		if(clen!=CRYPTO_ABYTES)//Incorrect tag length
-			return -1;
-
-        /*
-		for(unsigned i=0; i<CRYPTO_ABYTES; ++i)
-		{
-			if(c[(*mlen)+i] != Tag[i])
+			else //Last incomplete block
 			{
-				for(unsigned j=0; j< (*mlen); ++j)//Erasing decryption result
-					m[j]=0;
-				return -1; //Invalid
+				for(unsigned i=0; i<adlen; ++i)
+					BlockInput[i+2+CRYPTO_KEYBYTES] = ad[auth_bytes+i];
+				for(unsigned i=(unsigned)adlen; i<CRYPTO_ADBLOCK; ++i)
+					BlockInput[i+2+CRYPTO_KEYBYTES] = (unsigned char)adlen;
 			}
+
+			//4. Key
+			for(unsigned i=0; i<CRYPTO_KEYBYTES; ++i) 
+			{
+				 BlockInput[i+CRYPTO_ADBLOCK+CRYPTO_KEYBYTES+2] = k[i];
+			}
+			
+
+			//5.Call to the F permutation
+
+			FPerm(BlockInput,BlockOutput);//Call to the F permutation
+
+			 for(unsigned i=0; i<64-2-CRYPTO_KEYBYTES; ++i)//Adding the output to Z
+			 {
+				 BlockLastInput[i+2] ^= BlockOutput[i+2];
+			 }
+
+			//Counters increment
+			 adblock_counter++;
+			 if(adlen>=CRYPTO_ADBLOCK)
+			 {
+				 auth_bytes += CRYPTO_ADBLOCK;
+				 adlen-=CRYPTO_ADBLOCK;
+			 }
+			 else 
+			 {
+				 auth_bytes += adlen;
+				 adlen=0;
+			 }
 		}
-        */
-       return 0;
-     }
+	}
 
+	// Tag production 
 
+	//1. Permutation call
+	FPerm(BlockLastInput,Tag);
+	//2. Key injection
+	for(unsigned i=0; i<CRYPTO_KEYBYTES; ++i) 
+	{
+			Tag[64-CRYPTO_KEYBYTES+i] ^= k[i];
+	}
 
+	//3. Truncation
+	if(clen!=CRYPTO_ABYTES)//Incorrect tag length
+		return -1;
 
-
+	for(unsigned i=0; i<CRYPTO_ABYTES; ++i)
+	{
+        printf("%02X %02X\n", (c[(*mlen)+i] & 0xFF), Tag[i]);
+		if((c[(*mlen)+i] & 0xFF) != Tag[i])
+		{
+			for(unsigned j=0; j< (*mlen); ++j)//Erasing decryption result
+				m[j]=0;
+			return -1; //Invalid
+		}
+	}
+    return 0;
+}
