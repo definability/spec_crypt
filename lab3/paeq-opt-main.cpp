@@ -66,10 +66,14 @@ int enc(char* filename, char* k) {
     int filename_length = strlen(filename);
     char * enc_filename = (char*) malloc(filename_length+5);
     char * mac_filename = (char*) malloc(filename_length+5);
+    sprintf(enc_filename, "%s.enc", filename);
+    sprintf(mac_filename, "%s.mac", filename);
+    /*
     strcpy(enc_filename, filename);
     strcpy(mac_filename, filename);
     strcat(enc_filename, ".enc");
     strcat(mac_filename, ".mac");
+    */
     FILE * enc_output = fopen(enc_filename, "w");
     FILE * mac_output = fopen(mac_filename, "w");
     FILE * tmp_output = fopen("tmp.txt", "w");
@@ -94,26 +98,25 @@ int enc(char* filename, char* k) {
     return 0;
 }
 
-int dec(char* filename, char* key) {
-    char* plaintext_decrypted = (char*)malloc(2048+tag_bytes);
-    unsigned long long decrypted_length;
+int dec(char* filename, char* k) {
     char associated_data[] = "ad";
     unsigned long long ad_length = strlen(associated_data);
     char nonce[] = "nonce";
     int filename_length = strlen(filename);
     char * enc_filename = (char*) malloc(filename_length+5);
     char * mac_filename = (char*) malloc(filename_length+5);
-    strcpy(enc_filename, filename);
-    strcpy(mac_filename, filename);
-    strcat(enc_filename, ".enc");
-    strcat(mac_filename, ".mac");
+    sprintf(enc_filename, "%s.enc", filename);
+    sprintf(mac_filename, "%s.mac", filename);
     FILE * enc_output = fopen(enc_filename, "rb");
     FILE * mac_output = fopen(mac_filename, "rb");
 
     fseek(enc_output, 0L, SEEK_END);
     unsigned long long ciphertext_length = ftell(enc_output);
-    char* ciphertext = (char*)malloc(ciphertext_length);
+    char* ciphertext = (char*)malloc(ciphertext_length+tag_bytes);
     fseek(enc_output, 0L, SEEK_SET);
+
+    unsigned long long decrypted_length = ciphertext_length;
+    char* plaintext_decrypted = (char*)malloc(decrypted_length);
 
     int i=0;
     char s;
@@ -129,13 +132,10 @@ int dec(char* filename, char* key) {
         i++;
     }
     //printf("\n");
-    ciphertext[i] = 0;
     fclose(enc_output);
     fclose(mac_output);
     ciphertext_length = (unsigned long long)i;
 
-    char * k = (char*) malloc(strlen(key));
-    strcpy(k, key);
 	int result = crypto_aead_decrypt(plaintext_decrypted, &decrypted_length, NULL, ciphertext, ciphertext_length, associated_data, ad_length, nonce, k);
     free(enc_filename);
     free(mac_filename);
