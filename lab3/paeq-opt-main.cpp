@@ -35,12 +35,12 @@ int main(int argc, char* argv[])
     else {
         enc(argv[1], key_hash);
     }
-	return 0;
+    return 0;
 }
 
 int enc(char* filename, char* k) {
     FILE * input = fopen(filename, "rb");
-
+    
     fseek(input, 0L, SEEK_END);
     unsigned long long plaintext_length = ftell(input);
     fseek(input, 0L, SEEK_SET);
@@ -61,7 +61,7 @@ int enc(char* filename, char* k) {
     char associated_data[] = "ad";
     unsigned long long ad_length = strlen(associated_data);
     char nonce[] = "nonce";
-	crypto_aead_encrypt(ciphertext, &ciphertext_length, plaintext, plaintext_length, associated_data, ad_length, NULL, nonce, k);
+    crypto_aead_encrypt(ciphertext, &ciphertext_length, plaintext, plaintext_length, associated_data, ad_length, NULL, nonce, k);
     //printf("%s ->", plaintext);
     int filename_length = strlen(filename);
     char * enc_filename = (char*) malloc(filename_length+5);
@@ -88,6 +88,7 @@ int enc(char* filename, char* k) {
         fprintf(mac_output, "%c", ciphertext[i] & 0xFF);
         fprintf(tmp_output, "%c", ciphertext[i] & 0xFF);
     }
+    //printf("\n");
     fclose(enc_output);
     fclose(mac_output);
     free(enc_filename);
@@ -109,15 +110,15 @@ int dec(char* filename, char* k) {
     sprintf(mac_filename, "%s.mac", filename);
     FILE * enc_output = fopen(enc_filename, "rb");
     FILE * mac_output = fopen(mac_filename, "rb");
-
+    
     fseek(enc_output, 0L, SEEK_END);
     unsigned long long ciphertext_length = ftell(enc_output);
     char* ciphertext = (char*)malloc(ciphertext_length+tag_bytes);
     fseek(enc_output, 0L, SEEK_SET);
-
+    
     unsigned long long decrypted_length = ciphertext_length;
     char* plaintext_decrypted = (char*)malloc(decrypted_length);
-
+    
     int i=0;
     char s;
     while (fscanf(enc_output, "%c", &s) != EOF) {
@@ -135,8 +136,8 @@ int dec(char* filename, char* k) {
     fclose(enc_output);
     fclose(mac_output);
     ciphertext_length = (unsigned long long)i;
-
-	int result = crypto_aead_decrypt(plaintext_decrypted, &decrypted_length, NULL, ciphertext, ciphertext_length, associated_data, ad_length, nonce, k);
+    
+    int result = crypto_aead_decrypt(plaintext_decrypted, &decrypted_length, NULL, ciphertext, ciphertext_length, associated_data, ad_length, nonce, k);
     free(enc_filename);
     free(mac_filename);
     free(ciphertext);
